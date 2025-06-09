@@ -5,9 +5,11 @@ from app.services.db_service import insert_to_db, get_all_cv_data
 import json
 from io import BytesIO
 from flask_cors import cross_origin
+from ..log_config import setup_logger
 
 @cross_origin()
 def upload_cv():
+    logger=setup_logger()
     if 'files' not in request.files:
         return jsonify({"error": "No files part"}), 400
 
@@ -15,6 +17,7 @@ def upload_cv():
     results = []
 
     for file in files:
+
         if file.filename == '':
             continue
         try:
@@ -23,6 +26,7 @@ def upload_cv():
             structured_data = query_ollama_for_json(text)
             insert_to_db(structured_data)
             results.append({"filename": file.filename, "status": "success", "data": structured_data})
+            logger.info(f"Processed file: {file.filename}, Extracted data: {structured_data}")
         except Exception as e:
             results.append({"filename": file.filename, "status": "error", "error": str(e)})
 
@@ -30,8 +34,11 @@ def upload_cv():
 
 @cross_origin()
 def query_cv():
+    logger=setup_logger()
+
     try:
         user_query = request.json.get("query", "")
+        logger.info(f"user_query :{user_query}")
         if not user_query:
             return jsonify({"error": "Query is required"}), 400
 
@@ -49,7 +56,9 @@ def query_cv():
             applicant_data = {headers[i]: row[i] for i in range(len(headers))}
             applicant_str = "\n".join(f"{key}: {value}" for key, value in applicant_data.items())
             all_applicants_text += f"---\n{applicant_str}\n"
-
+        logger.info(f"applicants:{all_applicants_text}")
+        
+#"give me applicants who satisfy the the conditons knows[React,python],softskills[leadership], "location": ["Bangalore"],yearsExp:3, score: "600"
         # Define prompt safely with .format()
         prompt_template = """
 You are a top-tier recruitment assistant.
@@ -116,6 +125,7 @@ Output Requirements:
         from app.services.ollama_service import query_ollama_direct
 
         model_answer = query_ollama_direct(prompt)
+        logger.info(f"Model answer: {model_answer},user given query:{user_query}")
 
         # Try parsing the result
         try:
