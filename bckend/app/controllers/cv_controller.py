@@ -22,11 +22,15 @@ def upload_cv():
             continue
         try:
             file_stream = BytesIO(file.read())
+            #pdf Text extraction
             text = extract_text_from_pdf(file_stream)
+            logger.info(f"Extracted Text: {text}")
+
+            #Analyzing And converting it into Json format
             structured_data = query_ollama_for_json(text)
-            insert_to_db(structured_data)
             results.append({"filename": file.filename, "status": "success", "data": structured_data})
-            logger.info(f"Processed file: {file.filename}, Extracted data: {structured_data}")
+            #Insertion into DB
+            insert_to_db(structured_data)
         except Exception as e:
             results.append({"filename": file.filename, "status": "error", "error": str(e)})
 
@@ -46,8 +50,7 @@ def query_cv():
         rows = get_all_cv_data()
         headers = [
             "Name", "Email", "Phone", "Location", "Education", "Skills",
-            "Experience Years", "Current Company", "Expected Salary",
-            "Notice Period", "Portfolio Link"
+            "Experience Years", "Current Company","Portfolio Link"
         ]
 
         # Combine all applicant data as text
@@ -63,7 +66,7 @@ def query_cv():
         prompt_template = """
 You are a top-tier recruitment assistant.
 
-You are provided with structured CV data from multiple applicants. Your task is to evaluate how closely each applicant matches the ideal profile based on the job-related question provided.
+You are provided with structured list of CV data from multiple applicants. Your task is to evaluate how closely each applicant matches the ideal profile based on the job-related question provided.
 
 -----------------------
 Question:
@@ -80,7 +83,7 @@ Output Requirements:
 - Do **not** include any extra text before or after the JSON.
 - DO not return anything other than the given JSON format.
 - If a field is not available, return an empty string "".
-- The output must be in this exact JSON format:
+- The output must be in this exact JSON format example:
 
 [
   {{
@@ -100,7 +103,7 @@ Output Requirements:
 ]
 
 
-1.. For each applicant, evaluate and assign a score between 0 and 100 based on relevance:
+1.For each applicant, evaluate and assign a score between 0 and 100 based on relevance and Recruitment precpective:
    - 100 = perfect match
    - 0 = no match
    - Use intermediate scores for partial relevance.
@@ -111,9 +114,7 @@ Output Requirements:
    - "contact" (string): Phone number or "" if not available
    - "score" (integer): Matching score between 0–100
 
-
-
-
+   
 """
 
         prompt = prompt_template.format(
