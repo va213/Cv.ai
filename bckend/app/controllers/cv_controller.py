@@ -103,7 +103,7 @@ Output Requirements:
 ]
 
 
-1.For each applicant, evaluate and assign a score between 0 and 100 based on relevance and Recruitment precpective:
+1.For each applicant, evaluate and assign a score between 0 and 100 based on relevance:
    - 100 = perfect match
    - 0 = no match
    - Use intermediate scores for partial relevance.
